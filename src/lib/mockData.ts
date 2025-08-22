@@ -4,6 +4,7 @@ export interface Submission {
   student_name: string
   file_name: string
   file_url: string
+  subject: string
   status: 'pending' | 'analyzed' | 'approved' | 'rejected'
   ai_score: number | null
   teacher_approved: boolean
@@ -32,6 +33,7 @@ export const mockSubmissions: Submission[] = [
     student_name: 'Alex Johnson',
     file_name: 'calculus_homework_ch3.pdf',
     file_url: '#',
+    subject: 'Mathematics',
     status: 'approved',
     ai_score: 85,
     teacher_approved: true,
@@ -57,6 +59,7 @@ export const mockSubmissions: Submission[] = [
     student_name: 'Alex Johnson',
     file_name: 'physics_lab_report.pdf',
     file_url: '#',
+    subject: 'Physics',
     status: 'analyzed',
     ai_score: 78,
     teacher_approved: false,
@@ -77,6 +80,7 @@ export const mockSubmissions: Submission[] = [
     student_name: 'Emma Chen',
     file_name: 'chemistry_quiz.jpg',
     file_url: '#',
+    subject: 'Chemistry',
     status: 'pending',
     ai_score: null,
     teacher_approved: false,
@@ -91,6 +95,7 @@ export const mockSubmissions: Submission[] = [
     student_name: 'Michael Rodriguez',
     file_name: 'english_essay.pdf',
     file_url: '#',
+    subject: 'English',
     status: 'approved',
     ai_score: 92,
     teacher_approved: true,

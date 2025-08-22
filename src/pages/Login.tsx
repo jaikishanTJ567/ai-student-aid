@@ -1,20 +1,19 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Auth } from '@supabase/auth-ui-react'
-import { ThemeSupa } from '@supabase/auth-ui-shared'
-import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { GraduationCap, BookOpen, Users } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { GraduationCap, BookOpen, Users, User, UserCheck } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { toast } from 'sonner'
 
 const Login = () => {
-  const { user, userProfile } = useAuth()
+  const { user, userProfile, signInDemo } = useAuth()
   const navigate = useNavigate()
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (user && userProfile) {
-      // Redirect based on role
       if (userProfile.role === 'teacher') {
         navigate('/teacher')
       } else {
@@ -22,6 +21,19 @@ const Login = () => {
       }
     }
   }, [user, userProfile, navigate])
+
+  const handleDemoLogin = async (role: 'student' | 'teacher') => {
+    setIsLoading(true)
+    try {
+      await signInDemo(role)
+      toast.success(`Welcome! Logged in as ${role}`)
+    } catch (error) {
+      console.error('Demo login error:', error)
+      toast.error('Failed to login with demo account')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center p-4">
@@ -78,45 +90,43 @@ const Login = () => {
           </div>
         </motion.div>
 
-        {/* Right side - Auth */}
+        {/* Right side - Demo Auth Only */}
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="w-full max-w-md mx-auto"
+          className="w-full max-w-md mx-auto space-y-6"
         >
           <Card className="educational-card">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                <UserCheck className="h-5 w-5" />
+                Demo Login
+              </CardTitle>
               <CardDescription>
-                Sign in to your EduBridge AI account
+                Quick access for hackathon demonstration
               </CardDescription>
-              <div className="pt-2">
-                <p className="text-xs text-muted-foreground">
-                  <strong>Demo accounts:</strong><br />
-                  Student: student@demo.com<br />
-                  Teacher: teacher@demo.com<br />
-                  Password: demo123
-                </p>
-              </div>
             </CardHeader>
-            <CardContent>
-              <Auth
-                supabaseClient={supabase}
-                appearance={{
-                  theme: ThemeSupa,
-                  variables: {
-                    default: {
-                      colors: {
-                        brand: 'hsl(217 91% 40%)',
-                        brandAccent: 'hsl(217 91% 50%)',
-                      },
-                    },
-                  },
-                }}
-                providers={['google']}
-                redirectTo={window.location.origin}
-              />
+            <CardContent className="space-y-3">
+              <Button 
+                onClick={() => handleDemoLogin('student')}
+                disabled={isLoading}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                <User className="h-4 w-4 mr-2" />
+                Login as Student
+              </Button>
+              <Button 
+                onClick={() => handleDemoLogin('teacher')}
+                disabled={isLoading}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                <UserCheck className="h-4 w-4 mr-2" />
+                Login as Teacher
+              </Button>
+              <div className="text-xs text-muted-foreground text-center pt-2">
+                Demo only. No external auth required.
+              </div>
             </CardContent>
           </Card>
         </motion.div>

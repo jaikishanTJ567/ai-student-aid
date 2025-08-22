@@ -9,12 +9,14 @@ interface FileUploadProps {
   onUploadComplete?: (file: File) => void
   acceptedTypes?: string[]
   maxSize?: number // in MB
+  isProcessing?: boolean
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
   onUploadComplete,
   acceptedTypes = ['.pdf', '.jpg', '.jpeg', '.png'],
-  maxSize = 10
+  maxSize = 10,
+  isProcessing = false
 }) => {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
@@ -95,15 +97,25 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <CheckCircle2 className="h-8 w-8 text-secondary" />
+                {isProcessing ? (
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                ) : (
+                  <CheckCircle2 className="h-8 w-8 text-secondary" />
+                )}
                 <div>
-                  <h3 className="font-medium text-secondary">Upload Successful</h3>
-                  <p className="text-sm text-muted-foreground">{uploadedFile.name}</p>
+                  <h3 className="font-medium text-secondary">
+                    {isProcessing ? 'Processing with AI...' : 'Upload Successful'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {isProcessing ? 'LLM is analyzing your submission' : uploadedFile.name}
+                  </p>
                 </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={resetUpload}>
-                <X className="h-4 w-4" />
-              </Button>
+              {!isProcessing && (
+                <Button variant="ghost" size="sm" onClick={resetUpload}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

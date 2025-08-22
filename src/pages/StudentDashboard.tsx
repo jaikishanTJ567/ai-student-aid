@@ -1,10 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { FileUpload } from '@/components/FileUpload'
 import { Navbar } from '@/components/Navbar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import {
   Table,
@@ -23,16 +22,90 @@ import {
   ExternalLink,
   Upload
 } from 'lucide-react'
-import { motion } from 'framer-motion'
-import { getStudentSubmissions } from '@/lib/mockData'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useSubmissions } from '@/contexts/SubmissionsContext'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { analyzeFileWithGemini } from '@/lib/gemini'
+import { useToast } from '@/hooks/use-toast'
 
 const StudentDashboard = () => {
   const { userProfile } = useAuth()
-  const [submissions] = useState(() => getStudentSubmissions('student-1'))
+  const { getStudentSubmissions, createSubmission, updateSubmission } = useSubmissions()
+  const { toast } = useToast()
+  const submissions = useMemo(() => getStudentSubmissions(userProfile?.id || 'student-1'), [userProfile, getStudentSubmissions])
 
-  const handleFileUpload = (file: File) => {
-    console.log('File uploaded:', file.name)
-    // In real app, this would trigger the API call to upload and analyze
+  const [fileTitle, setFileTitle] = useState('')
+  const [subject, setSubject] = useState('Mathematics')
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [processingMessage, setProcessingMessage] = useState('')
+
+  const handleFileUpload = async (file: File) => {
+    const safeTitle = fileTitle.trim() || file.name
+    const newId = `sub-${Date.now()}`
+    
+    // Create immediately so UI reflects upload
+    createSubmission({
+      studentId: userProfile?.id || 'student-1',
+      studentName: userProfile?.full_name || 'Demo Student',
+      fileName: safeTitle,
+      subject,
+      fileUrl: '#'
+    })
+    setFileTitle('')
+
+    // Start LLM processing
+    setIsProcessing(true)
+    setProcessingMessage('🤖 AI is analyzing your submission...')
+    
+    // Show processing toast
+    toast({
+      title: "🤖 LLM Processing Started",
+      description: "Our AI is analyzing your submission with advanced language models...",
+      duration: 5000,
+    })
+
+    // Run Gemini analysis and update
+    try {
+      const result = await analyzeFileWithGemini(file, subject, safeTitle)
+      
+      // Show completion message with score
+      setProcessingMessage(`✅ LLM Processing Complete! Your assignment scored ${result.aiScore}%`)
+      
+      // Show completion toast
+      toast({
+        title: "✅ LLM Processing Complete!",
+        description: `Your assignment scored ${result.aiScore}% and has been analyzed by our AI.`,
+        duration: 8000,
+      })
+      
+      // Find the most recent submission by this name and subject to update
+      const latest = (getStudentSubmissions(userProfile?.id || 'student-1')[0])
+      if (latest) {
+        updateSubmission({ id: latest.id, ai_score: result.aiScore, weak_topics: result.weakTopics, recommended_resources: result.resources })
+      }
+      
+      // Clear processing message after 3 seconds
+      setTimeout(() => {
+        setIsProcessing(false)
+        setProcessingMessage('')
+      }, 3000)
+      
+    } catch (_e) {
+      setProcessingMessage('❌ Analysis failed. Please try again.')
+      
+      // Show error toast
+      toast({
+        title: "❌ LLM Processing Failed",
+        description: "There was an error analyzing your submission. Please try again.",
+        duration: 5000,
+      })
+      
+      setTimeout(() => {
+        setIsProcessing(false)
+        setProcessingMessage('')
+      }, 3000)
+    }
   }
 
   const getStatusIcon = (status: string) => {
@@ -135,7 +208,55 @@ const StudentDashboard = () => {
             <Upload className="mr-2 h-5 w-5" />
             Upload New Assignment
           </h2>
-          <FileUpload onUploadComplete={handleFileUpload} />
+
+          <div className="grid md:grid-cols-3 gap-3">
+            <Input 
+              placeholder="Enter file title (optional)"
+              value={fileTitle}
+              onChange={(e) => setFileTitle(e.target.value)}
+            />
+            <Select value={subject} onValueChange={setSubject}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select subject" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Mathematics">Mathematics</SelectItem>
+                <SelectItem value="Physics">Physics</SelectItem>
+                <SelectItem value="Chemistry">Chemistry</SelectItem>
+                <SelectItem value="Biology">Biology</SelectItem>
+                <SelectItem value="English">English</SelectItem>
+                <SelectItem value="Computer Science">Computer Science</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <FileUpload onUploadComplete={handleFileUpload} isProcessing={isProcessing} />
+          
+          {/* LLM Processing Message */}
+          <AnimatePresence>
+            {isProcessing && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="mt-4"
+              >
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                      <div>
+                        <p className="font-medium text-primary">{processingMessage}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Our AI is evaluating your work using advanced language models...
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Recent Results */}
@@ -229,6 +350,7 @@ const StudentDashboard = () => {
                 <TableRow>
                   <TableHead>Date</TableHead>
                   <TableHead>File Name</TableHead>
+                  <TableHead>Subject</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>AI Score</TableHead>
                   <TableHead>Teacher Approval</TableHead>
@@ -241,6 +363,7 @@ const StudentDashboard = () => {
                       {new Date(submission.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="font-medium">{submission.file_name}</TableCell>
+                    <TableCell className="text-sm">{submission.subject}</TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         {getStatusIcon(submission.status)}

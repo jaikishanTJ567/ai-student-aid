@@ -24,6 +24,7 @@ A modern educational platform built with React + TypeScript that provides AI-pow
 - **Charts**: Recharts for data visualization  
 - **Animation**: Framer Motion
 - **Authentication**: Supabase Auth (Email + Google OAuth)
+- **Database**: Supabase PostgreSQL with Row Level Security
 - **State Management**: React Query + Context API
 
 ## 📋 Project Setup
@@ -46,16 +47,10 @@ A modern educational platform built with React + TypeScript that provides AI-pow
    npm install
    ```
 
-3. **Environment Setup** 
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Update `.env` with your Supabase credentials:
-   ```bash
-   VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=your-anon-key-here
-   ```
+3. **Supabase Setup**
+   - The app is pre-configured with Supabase credentials
+   - Run the database setup script in your Supabase SQL Editor (see `database-setup.sql`)
+   - See `SETUP.md` for detailed setup instructions
 
 4. **Start development server**
    ```bash
@@ -66,12 +61,19 @@ A modern educational platform built with React + TypeScript that provides AI-pow
 
 ## 🔐 Demo Accounts
 
-The app includes demo functionality with mock data:
+For quick hackathon demonstration, use these demo accounts:
 
-- **Student Account**: `student@demo.com` / `demo123`
-- **Teacher Account**: `teacher@demo.com` / `demo123`
+### Student Account
+- **Email**: `student@demo.com`
+- **Password**: `demo123456`
+- **Role**: Student
 
-> **Note**: For full Supabase authentication, you'll need to configure your Supabase project with these demo accounts or create your own.
+### Teacher Account
+- **Email**: `teacher@demo.com`
+- **Password**: `demo123456`
+- **Role**: Teacher
+
+> **Note**: Demo accounts are automatically created on first login. Use the demo login buttons for instant access!
 
 ## 🏗️ Project Structure
 
@@ -109,9 +111,9 @@ The app uses a comprehensive design system with:
 
 ### Login Page (`/login`)
 - Supabase Auth UI integration
-- Role-based redirect after login
+- **Demo login buttons for instant access**
 - Google OAuth support
-- Demo account information
+- Role-based redirect after login
 
 ### Student Dashboard (`/student`)
 - File upload with drag-and-drop
@@ -130,7 +132,33 @@ The app uses a comprehensive design system with:
 - **Protected Routes**: Role-based access control
 - **Auto-redirect**: Users redirected to appropriate dashboard
 - **Session Management**: Persistent authentication state
-- **Role Validation**: Server-side role verification (mock)
+- **Demo Login**: One-click access for demonstration
+- **Supabase Integration**: Real authentication with PostgreSQL
+
+## 🗄️ Database Schema
+
+### user_profiles Table
+- `id` (UUID, Primary Key)
+- `email` (TEXT)
+- `role` (TEXT: 'student' | 'teacher')
+- `full_name` (TEXT)
+- `avatar_url` (TEXT)
+- `created_at` (TIMESTAMP)
+- `updated_at` (TIMESTAMP)
+
+### submissions Table
+- `id` (UUID, Primary Key)
+- `student_id` (UUID, Foreign Key)
+- `file_name` (TEXT)
+- `file_url` (TEXT)
+- `status` (TEXT: 'pending' | 'analyzed' | 'approved' | 'rejected')
+- `ai_score` (INTEGER)
+- `teacher_approved` (BOOLEAN)
+- `teacher_feedback` (TEXT)
+- `weak_topics` (TEXT[])
+- `recommended_resources` (JSONB)
+- `created_at` (TIMESTAMP)
+- `updated_at` (TIMESTAMP)
 
 ## 🚀 Deployment
 
@@ -173,6 +201,14 @@ To connect real APIs:
 - Consistent code formatting
 - Component-based architecture
 
+## 🎯 Hackathon Demo Tips
+
+1. **Quick Demo**: Use the demo login buttons for instant access
+2. **Student Flow**: Upload a file → See AI analysis → Wait for teacher approval
+3. **Teacher Flow**: Review submissions → Approve/reject → View analytics
+4. **Real-time**: Changes are reflected immediately in the UI
+5. **Mobile Responsive**: Works on all device sizes
+
 ## 📝 License
 
 This project is part of the Lovable platform. See [Lovable Documentation](https://docs.lovable.dev) for more information.
@@ -182,6 +218,7 @@ This project is part of the Lovable platform. See [Lovable Documentation](https:
 - [Lovable Documentation](https://docs.lovable.dev)
 - [Supabase Documentation](https://supabase.com/docs)
 - [shadcn/ui Documentation](https://ui.shadcn.com)
+- See `SETUP.md` for detailed setup instructions
 
 ---
 

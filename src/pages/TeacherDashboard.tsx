@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Navbar } from '@/components/Navbar'
 import { SubmissionDetailModal } from '@/components/SubmissionDetailModal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -29,16 +29,18 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  Eye
+  Eye,
+  Edit3
 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { getTeacherSubmissions, getClassroomStats, mockWeakTopics, Submission } from '@/lib/mockData'
+import { useSubmissions } from '@/contexts/SubmissionsContext'
+import { Submission } from '@/lib/mockData'
 
 const TeacherDashboard = () => {
-  const [submissions] = useState(() => getTeacherSubmissions())
+  const { submissions, weakTopics, approveSubmission, rejectSubmission, getClassroomStats } = useSubmissions()
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const stats = getClassroomStats()
+  const stats = useMemo(() => getClassroomStats(), [submissions])
 
   const handleViewSubmission = (submission: Submission) => {
     setSelectedSubmission(submission)
@@ -46,13 +48,11 @@ const TeacherDashboard = () => {
   }
 
   const handleApproveSubmission = (submissionId: string, adjustedScore?: number) => {
-    console.log('Approving submission:', submissionId, 'with score:', adjustedScore)
-    // In real app, this would update the submission in the database
+    approveSubmission(submissionId, adjustedScore)
   }
 
   const handleRejectSubmission = (submissionId: string) => {
-    console.log('Rejecting submission:', submissionId)
-    // In real app, this would update the submission status
+    rejectSubmission(submissionId)
   }
 
   const getStatusIcon = (status: string, teacherApproved: boolean) => {
@@ -75,8 +75,7 @@ const TeacherDashboard = () => {
     return <Badge variant="secondary">Processing</Badge>
   }
 
-  // Prepare heatmap data
-  const heatmapData = mockWeakTopics.map(topic => ({
+  const heatmapData = weakTopics.map(topic => ({
     topic: topic.topic,
     count: topic.count,
     percentage: topic.percentage
@@ -234,7 +233,10 @@ const TeacherDashboard = () => {
                   <TableHead>Student</TableHead>
                   <TableHead>File</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>AI Score</TableHead>
+                  <TableHead className="flex items-center space-x-1">
+                    <span>AI Score</span>
+                    <Edit3 className="h-3 w-3 text-muted-foreground" />
+                  </TableHead>
                   <TableHead>Submitted</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -269,17 +271,36 @@ const TeacherDashboard = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {submission.ai_score ? (
-                        <span className={`font-medium ${
-                          submission.ai_score >= 85 ? 'text-secondary' :
-                          submission.ai_score >= 70 ? 'text-primary' :
-                          'text-accent'
-                        }`}>
-                          {submission.ai_score}%
-                        </span>
-                      ) : (
-                        '-'
-                      )}
+                      <div className="flex items-center space-x-2">
+                        {submission.ai_score ? (
+                          <div className="flex items-center space-x-2">
+                            <span className={`font-bold text-lg ${
+                              submission.ai_score >= 85 ? 'text-secondary' :
+                              submission.ai_score >= 70 ? 'text-primary' :
+                              'text-destructive'
+                            }`}>
+                              {submission.ai_score}%
+                              {submission.teacher_approved && (
+                                <span className="ml-1 text-xs text-muted-foreground">✓</span>
+                              )}
+                            </span>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => {
+                                setSelectedSubmission(submission)
+                                setIsModalOpen(true)
+                              }}
+                              className="h-6 w-6 p-0"
+                              title="Edit AI Score"
+                            >
+                              <Edit3 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {new Date(submission.created_at).toLocaleDateString()}

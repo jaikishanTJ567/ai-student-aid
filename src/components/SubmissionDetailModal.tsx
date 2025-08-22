@@ -101,11 +101,11 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
             {/* Score */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Overall Score</Label>
+                <Label className="text-sm font-medium">AI Score (Editable)</Label>
                 {!isEditingScore && (
-                  <Button variant="ghost" size="sm" onClick={handleScoreEdit}>
+                  <Button variant="outline" size="sm" onClick={handleScoreEdit}>
                     <Edit3 className="h-3 w-3 mr-1" />
-                    Adjust
+                    Edit Score
                   </Button>
                 )}
               </div>
@@ -131,7 +131,13 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
               ) : (
                 <div className="flex items-center space-x-4">
                   <Progress value={adjustedScore} className="flex-1" />
-                  <span className="text-sm font-medium w-12">{adjustedScore}%</span>
+                  <span className={`text-lg font-bold w-16 ${
+                    adjustedScore >= 85 ? 'text-secondary' :
+                    adjustedScore >= 70 ? 'text-primary' :
+                    'text-destructive'
+                  }`}>
+                    {adjustedScore}%
+                  </span>
                 </div>
               )}
             </div>
